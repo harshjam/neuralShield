@@ -61,6 +61,7 @@ export default function EnhancedSecurity({
 
   const startCamera = async () => {
     try {
+      setCameraStatus("Requesting camera access...");
       const stream = await navigator.mediaDevices.getUserMedia({ 
         video: { facingMode: "user" }
       });
