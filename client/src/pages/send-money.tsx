@@ -21,6 +21,11 @@ import { useLocation } from "wouter";
 import { ArrowLeft } from "lucide-react";
 import VerificationDialog from "@/components/ui/verification-dialog";
 
+interface VerificationResult {
+  biometricVerified: boolean;
+  faceImage?: string;
+}
+
 export default function SendMoney() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
@@ -44,7 +49,7 @@ export default function SendMoney() {
   });
 
   const transferMutation = useMutation({
-    mutationFn: async (data: TransferData) => {
+    mutationFn: async (data: { transfer: TransferData; verification?: VerificationResult }) => {
       const res = await apiRequest("POST", "/api/transfer", data);
       return res.json();
     },
@@ -67,13 +72,22 @@ export default function SendMoney() {
   });
 
   const onSubmit = (data: TransferData) => {
-    setPendingTransfer(data);
-    setShowVerification(true);
+    // Check if amount requires verification (>= 1 lakh)
+    if (data.amount >= 100000) {
+      setPendingTransfer(data);
+      setShowVerification(true);
+    } else {
+      // For smaller amounts, proceed without verification
+      transferMutation.mutate({ transfer: data });
+    }
   };
 
-  const handleVerificationComplete = () => {
-    if (pendingTransfer) {
-      transferMutation.mutate(pendingTransfer);
+  const handleVerificationComplete = (verificationResult: VerificationResult) => {
+    if (pendingTransfer && verificationResult.biometricVerified) {
+      transferMutation.mutate({
+        transfer: pendingTransfer,
+        verification: verificationResult
+      });
     }
     setShowVerification(false);
     setPendingTransfer(null);
@@ -153,7 +167,10 @@ export default function SendMoney() {
           isOpen={showVerification}
           amount={pendingTransfer?.amount || 0}
           onVerify={handleVerificationComplete}
-          onCancel={() => setShowVerification(false)}
+          onCancel={() => {
+            setShowVerification(false);
+            setPendingTransfer(null);
+          }}
         />
       </div>
     </div>
