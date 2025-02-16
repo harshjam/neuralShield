@@ -7,7 +7,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Progress } from "@/components/ui/progress";
-import { CheckCircle2, Fingerprint, Camera, Brain, AlertCircle } from "lucide-react";
+import { CheckCircle2, Fingerprint, Camera, Brain, AlertCircle, Loader2 } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 
 export interface EnhancedSecurityProps {
@@ -231,6 +231,7 @@ export default function EnhancedSecurity({
               onClick={simulateStep}
               disabled={fraudScore > 70 || progress > 0}
             >
+              {progress > 0 && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               {currentStep === steps.length - 1 ? "Complete" : "Next"}
             </Button>
           </div>
