@@ -24,18 +24,19 @@ export default function EnhancedSecurity({
   const [currentStep, setCurrentStep] = useState(0);
   const [progress, setProgress] = useState(0);
   const [fraudScore, setFraudScore] = useState(0);
+  const [showCamera, setShowCamera] = useState(false);
 
   const steps = [
     {
       title: "Biometric Verification",
       icon: Fingerprint,
-      message: "Scanning fingerprint via Touch ID...",
+      message: "Place your finger on the Touch ID sensor...",
       duration: 1500,
     },
     {
       title: "Camera Verification",
       icon: Camera,
-      message: "Capturing and analyzing facial features...",
+      message: "Capturing facial features for verification...",
       duration: 2000,
     },
     {
@@ -52,11 +53,22 @@ export default function EnhancedSecurity({
     // Reset progress for new step
     setProgress(0);
 
+    // Special handling for camera step
+    if (currentStep === 1) {
+      setShowCamera(true);
+      await new Promise((resolve) => setTimeout(resolve, 500)); // Wait for camera UI to show
+    }
+
     // Simulate progress
     const interval = step.duration / 20;
     for (let i = 0; i <= 100; i += 5) {
       setProgress(i);
       await new Promise((resolve) => setTimeout(resolve, interval));
+    }
+
+    // Hide camera after capture
+    if (currentStep === 1) {
+      setShowCamera(false);
     }
 
     // Special handling for fraud detection step
@@ -94,6 +106,21 @@ export default function EnhancedSecurity({
                 High fraud risk detected (Score: {fraudScore}). Transaction blocked.
               </AlertDescription>
             </Alert>
+          )}
+
+          {showCamera && (
+            <div className="relative w-full aspect-video bg-black rounded-lg mb-4 overflow-hidden">
+              <div className="absolute inset-0 flex items-center justify-center">
+                <Camera className="w-16 h-16 text-white animate-pulse" />
+              </div>
+              <div className="absolute top-4 left-4">
+                <div className="w-3 h-3 bg-red-500 rounded-full animate-pulse" />
+              </div>
+              <div className="absolute inset-0 border-2 border-white/20" />
+              <div className="absolute bottom-4 left-1/2 -translate-x-1/2 text-white text-sm">
+                Looking for face...
+              </div>
+            </div>
           )}
 
           <div className="space-y-4">
