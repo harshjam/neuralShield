@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -26,6 +26,17 @@ export default function EnhancedSecurity({
   const [fraudScore, setFraudScore] = useState(0);
   const [showCamera, setShowCamera] = useState(false);
   const [cameraStatus, setCameraStatus] = useState("");
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const streamRef = useRef<MediaStream | null>(null);
+
+  // Clean up camera stream when component unmounts
+  useEffect(() => {
+    return () => {
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach(track => track.stop());
+      }
+    };
+  }, []);
 
   const steps = [
     {
@@ -48,6 +59,31 @@ export default function EnhancedSecurity({
     },
   ];
 
+  const startCamera = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ 
+        video: { facingMode: "user" }
+      });
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+        streamRef.current = stream;
+      }
+    } catch (err) {
+      console.error("Failed to access camera:", err);
+      setCameraStatus("Failed to access camera. Please check permissions.");
+    }
+  };
+
+  const stopCamera = () => {
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach(track => track.stop());
+      streamRef.current = null;
+    }
+    if (videoRef.current) {
+      videoRef.current.srcObject = null;
+    }
+  };
+
   const simulateStep = async () => {
     const step = steps[currentStep];
 
@@ -58,6 +94,7 @@ export default function EnhancedSecurity({
     if (currentStep === 1) {
       setShowCamera(true);
       setCameraStatus("Initializing camera...");
+      await startCamera();
       await new Promise((resolve) => setTimeout(resolve, 500));
 
       // Camera capture sequence
@@ -70,6 +107,7 @@ export default function EnhancedSecurity({
       setCameraStatus("Running ML analysis...");
       await new Promise((resolve) => setTimeout(resolve, 1500));
 
+      stopCamera();
       setShowCamera(false);
     }
 
@@ -101,7 +139,10 @@ export default function EnhancedSecurity({
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={onCancel}>
+    <Dialog open={isOpen} onOpenChange={() => {
+      stopCamera();
+      onCancel();
+    }}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>Enhanced Security Verification</DialogTitle>
@@ -119,8 +160,15 @@ export default function EnhancedSecurity({
 
           {showCamera && (
             <div className="relative w-full aspect-video bg-black rounded-lg mb-4 overflow-hidden">
+              <video
+                ref={videoRef}
+                autoPlay
+                playsInline
+                muted
+                className="absolute inset-0 w-full h-full object-cover"
+              />
               <div className="absolute inset-0 flex items-center justify-center">
-                <Camera className="w-16 h-16 text-white animate-pulse" />
+                <Camera className="w-16 h-16 text-white/20" />
               </div>
               <div className="absolute top-4 left-4">
                 <div className="w-3 h-3 bg-red-500 rounded-full animate-pulse" />
