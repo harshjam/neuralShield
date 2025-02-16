@@ -1,5 +1,4 @@
 import { Dialog, DialogContent } from "@/components/ui/dialog";
-import OTPVerification from "./otp-verification";
 import EnhancedSecurity from "./enhanced-security";
 
 interface VerificationDialogProps {
@@ -17,16 +16,15 @@ export default function VerificationDialog({
 }: VerificationDialogProps) {
   const requiresEnhancedSecurity = amount >= 100000; // 1 lakh
 
+  // For amounts under 1 lakh, directly verify
   if (!requiresEnhancedSecurity) {
-    return (
-      <OTPVerification
-        isOpen={isOpen}
-        onVerify={onVerify}
-        onCancel={onCancel}
-      />
-    );
+    if (isOpen) {
+      onVerify();
+    }
+    return null;
   }
 
+  // For amounts over 1 lakh, show enhanced security
   return (
     <EnhancedSecurity
       isOpen={isOpen}
