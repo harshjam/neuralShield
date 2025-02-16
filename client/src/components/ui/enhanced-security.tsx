@@ -143,7 +143,7 @@ export default function EnhancedSecurity({
       stopCamera();
       onCancel();
     }}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent>
         <DialogHeader>
           <DialogTitle>Enhanced Security Verification</DialogTitle>
         </DialogHeader>
@@ -220,7 +220,10 @@ export default function EnhancedSecurity({
           </div>
 
           <div className="flex justify-end space-x-2">
-            <Button variant="outline" onClick={onCancel}>
+            <Button variant="outline" onClick={() => {
+              stopCamera();
+              onCancel();
+            }}>
               Cancel
             </Button>
             <Button 
