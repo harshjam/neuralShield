@@ -25,6 +25,7 @@ export default function EnhancedSecurity({
   const [progress, setProgress] = useState(0);
   const [fraudScore, setFraudScore] = useState(0);
   const [showCamera, setShowCamera] = useState(false);
+  const [cameraStatus, setCameraStatus] = useState("");
 
   const steps = [
     {
@@ -37,7 +38,7 @@ export default function EnhancedSecurity({
       title: "Camera Verification",
       icon: Camera,
       message: "Capturing facial features for verification...",
-      duration: 2000,
+      duration: 4000, // Increased duration for camera capture
     },
     {
       title: "Fraud Detection",
@@ -56,7 +57,20 @@ export default function EnhancedSecurity({
     // Special handling for camera step
     if (currentStep === 1) {
       setShowCamera(true);
-      await new Promise((resolve) => setTimeout(resolve, 500)); // Wait for camera UI to show
+      setCameraStatus("Initializing camera...");
+      await new Promise((resolve) => setTimeout(resolve, 500));
+
+      // Camera capture sequence
+      setCameraStatus("Looking for face...");
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+
+      setCameraStatus("Face detected - Capturing...");
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+
+      setCameraStatus("Running ML analysis...");
+      await new Promise((resolve) => setTimeout(resolve, 1500));
+
+      setShowCamera(false);
     }
 
     // Simulate progress
@@ -64,11 +78,6 @@ export default function EnhancedSecurity({
     for (let i = 0; i <= 100; i += 5) {
       setProgress(i);
       await new Promise((resolve) => setTimeout(resolve, interval));
-    }
-
-    // Hide camera after capture
-    if (currentStep === 1) {
-      setShowCamera(false);
     }
 
     // Special handling for fraud detection step
@@ -116,9 +125,12 @@ export default function EnhancedSecurity({
               <div className="absolute top-4 left-4">
                 <div className="w-3 h-3 bg-red-500 rounded-full animate-pulse" />
               </div>
-              <div className="absolute inset-0 border-2 border-white/20" />
+              <div className="absolute inset-0 border-2 border-white/20">
+                {/* Face detection frame */}
+                <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-32 h-32 border-2 border-green-400/50 rounded-full" />
+              </div>
               <div className="absolute bottom-4 left-1/2 -translate-x-1/2 text-white text-sm">
-                Looking for face...
+                {cameraStatus}
               </div>
             </div>
           )}
