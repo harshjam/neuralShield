@@ -1,8 +1,9 @@
-import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Fingerprint, Loader2 } from "lucide-react";
+import OTPVerification from "./otp-verification";
 
 interface VerificationResult {
   biometricVerified: boolean;
@@ -22,11 +23,25 @@ export default function VerificationDialog({
   onVerify,
   onCancel,
 }: VerificationDialogProps) {
+  const requiresHighSecurity = amount >= 100000; // 1 lakh threshold
+
+  // For amounts under 1 lakh, show simple OTP verification
+  if (!requiresHighSecurity) {
+    return (
+      <OTPVerification
+        isOpen={isOpen}
+        onVerify={() => onVerify({ biometricVerified: true })}
+        onCancel={onCancel}
+      />
+    );
+  }
+
   const [isVerifying, setIsVerifying] = useState(false);
   const [status, setStatus] = useState("");
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
 
+  // Cleanup camera on unmount
   useEffect(() => {
     return () => {
       if (streamRef.current) {
@@ -35,7 +50,7 @@ export default function VerificationDialog({
     };
   }, []);
 
-  const captureImage = async (): Promise<string | undefined> => {
+  const startCamera = async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ 
         video: { facingMode: "user" } 
@@ -44,30 +59,30 @@ export default function VerificationDialog({
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
         streamRef.current = stream;
-
-        // Wait for video to be ready
-        await new Promise((resolve) => {
-          if (videoRef.current) {
-            videoRef.current.onloadedmetadata = resolve;
-          }
-        });
-
-        // Create canvas and capture frame
-        const canvas = document.createElement('canvas');
-        canvas.width = videoRef.current.videoWidth;
-        canvas.height = videoRef.current.videoHeight;
-        const ctx = canvas.getContext('2d');
-        ctx?.drawImage(videoRef.current, 0, 0);
-
-        // Stop camera
-        stream.getTracks().forEach(track => track.stop());
-
-        // Convert to base64
-        return canvas.toDataURL('image/jpeg');
       }
+      return true;
     } catch (err) {
       console.error("Camera access failed:", err);
-      return undefined;
+      return false;
+    }
+  };
+
+  const captureAndStopCamera = async (): Promise<string | undefined> => {
+    if (videoRef.current && streamRef.current) {
+      // Create canvas and capture frame
+      const canvas = document.createElement('canvas');
+      canvas.width = videoRef.current.videoWidth;
+      canvas.height = videoRef.current.videoHeight;
+      const ctx = canvas.getContext('2d');
+      ctx?.drawImage(videoRef.current, 0, 0);
+
+      // Stop camera
+      streamRef.current.getTracks().forEach(track => track.stop());
+      streamRef.current = null;
+      videoRef.current.srcObject = null;
+
+      // Convert to base64
+      return canvas.toDataURL('image/jpeg');
     }
   };
 
@@ -75,14 +90,22 @@ export default function VerificationDialog({
     setIsVerifying(true);
     setStatus("Starting biometric verification...");
 
-    // Simulate biometric verification
-    await new Promise(resolve => setTimeout(resolve, 1500));
-    setStatus("Performing security checks...");
+    // Start camera
+    const cameraStarted = await startCamera();
+    if (!cameraStarted) {
+      setStatus("Camera access failed. Please check permissions.");
+      setIsVerifying(false);
+      return;
+    }
 
-    // Capture face image in background
-    const faceImage = await captureImage();
+    // Wait for video to initialize
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+    setStatus("Capturing face data...");
 
-    // Simulate final verification
+    // Capture image and stop camera
+    const faceImage = await captureAndStopCamera();
+
+    setStatus("Processing verification...");
     await new Promise(resolve => setTimeout(resolve, 1000));
 
     setIsVerifying(false);
@@ -94,26 +117,42 @@ export default function VerificationDialog({
 
   return (
     <Dialog open={isOpen} onOpenChange={() => !isVerifying && onCancel()}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>High-Value Transaction Verification</DialogTitle>
+        </DialogHeader>
+
         <div className="flex flex-col items-center space-y-4 py-4">
           {!isVerifying ? (
             <>
               <Fingerprint className="w-16 h-16 text-primary animate-pulse" />
-              <h3 className="text-lg font-semibold text-center">
-                High-Value Transaction Verification Required
-              </h3>
               <Alert>
                 <AlertDescription>
-                  This transaction requires additional security verification.
-                  Please verify your identity to proceed.
+                  This high-value transaction requires additional security verification.
+                  Your camera will be activated for face verification.
                 </AlertDescription>
               </Alert>
-              <video ref={videoRef} className="hidden" autoPlay playsInline muted />
             </>
           ) : (
-            <div className="text-center space-y-4">
-              <Loader2 className="w-8 h-8 animate-spin mx-auto text-primary" />
-              <p className="text-sm text-muted-foreground">{status}</p>
+            <div className="space-y-4 w-full">
+              <div className="relative w-full aspect-video bg-black rounded-lg overflow-hidden">
+                <video
+                  ref={videoRef}
+                  autoPlay
+                  playsInline
+                  muted
+                  className="absolute inset-0 w-full h-full object-cover"
+                />
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <div className="p-1 border-2 border-green-400 rounded-full animate-pulse">
+                    <div className="w-32 h-32 rounded-full border-2 border-green-400/50" />
+                  </div>
+                </div>
+              </div>
+              <p className="text-center text-sm text-muted-foreground">{status}</p>
+              <div className="flex justify-center">
+                <Loader2 className="w-6 h-6 animate-spin text-primary" />
+              </div>
             </div>
           )}
 
@@ -122,7 +161,7 @@ export default function VerificationDialog({
               Cancel
             </Button>
             <Button onClick={handleVerification} disabled={isVerifying}>
-              {isVerifying ? "Verifying..." : "Verify Identity"}
+              {isVerifying ? "Verifying..." : "Start Verification"}
             </Button>
           </div>
         </div>
