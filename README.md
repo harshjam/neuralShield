@@ -10,6 +10,7 @@ A secure banking application built with React, Express, and TypeScript featuring
 - Enhanced security for high-value transfers
 - Biometric verification for large transactions
 - Real-time fraud detection
+
 - Responsive UI with Tailwind CSS
 
 ## Tech Stack
@@ -50,6 +51,12 @@ The application will be available at `http://0.0.0.0:5000`
 - AI-powered fraud detection system
 - Secure session management
 - Input validation and sanitization
+
+
+<img width="896" alt="Screenshot 1946-11-27 at 6 45 28 AM" src="https://github.com/user-attachments/assets/a541c2c5-0286-488c-8e71-86f4e1118a0c" />
+<img width="875" alt="Screenshot 1946-11-27 at 7 06 13 AM" src="https://github.com/user-attachments/assets/edc45375-34ac-473c-9ab1-99eed7dd5874" />
+<img width="747" alt="Screenshot 1946-11-27 at 7 12 52 AM" src="https://github.com/user-attachments/assets/550befcd-f74f-4b0f-aafb-663fe00eda9e" />
+
 
 ## Project Structure
 
